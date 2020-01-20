@@ -1,13 +1,23 @@
 package tr.com.onurkinay.rvc
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.media.session.MediaSession
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.android.volley.DefaultRetryPolicy
 import com.android.volley.Request
 import com.android.volley.Response
@@ -33,22 +43,10 @@ class MainActivity : AppCompatActivity() {
         right = findViewById(R.id.right)
 
 
+
         val queue = Volley.newRequestQueue(this)
         val url = "http://$ip/"
-        val handler = Handler()
-        handler.postDelayed(object : Runnable {
-            override fun run() {
-                val stringRequest = StringRequest(Request.Method.GET, url,
-                    Response.Listener<String> { response ->
-                        println(response)
-                        volume?.progress = response.toInt()
-                    },
-                    Response.ErrorListener { /* any error */})
 
-                queue.add(stringRequest)
-                handler.postDelayed(this, 1000) // 1 sec delay
-            }
-        }, 0)
 
         volume?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(
@@ -84,12 +82,34 @@ class MainActivity : AppCompatActivity() {
         }
         setSupportActionBar(toolbar)
 
+
+        createNotificationChannel()
+
+
+
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "ben@onurkinay.com.tr -> having any problem, write me :)", Snackbar.LENGTH_LONG)
+            Snackbar.make(view, "ben@onurkinay.com.tr \n-> having any problem, write me :)", Snackbar.LENGTH_LONG)
                 .setAction("Action", null).show()
         }
 
+        val handler = Handler()
+        handler.postDelayed(object : Runnable {
+            override fun run() {
+                val stringRequest = StringRequest(Request.Method.GET, url,
+                    Response.Listener<String> { response ->
+                        println(response)
+                        volume?.progress = response.toInt()
+                    },
+                    Response.ErrorListener { /* any error */})
+
+                queue.add(stringRequest)
+                handler.postDelayed(this, 1000) // 1 sec delay
+            }
+        }, 0)
+
     }
+
+
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -138,5 +158,37 @@ class MainActivity : AppCompatActivity() {
 
         // Add the volley post request to the request queue
         VolleySingleton.getInstance(this).addToRequestQueue(request)
+    }
+
+    private fun createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Change Volume Level"
+            val descriptionText = "Made by HonourKNY"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("0", name, importance).apply {
+                description = descriptionText
+            }
+            // Register the channel with the system
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP -> {
+                var value = volume?.progress?.plus(3) as Int
+                volume?.progress = value
+                return true
+            }
+            KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                var value = volume?.progress?.minus(3) as Int
+                volume?.progress = value
+                return true
+            }
+        }
+        return super.onKeyDown(keyCode, event)
     }
 }
