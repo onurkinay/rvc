@@ -16,7 +16,7 @@ class S(BaseHTTPRequestHandler):
         proc = subprocess.Popen(['bash', '-c', bashCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         o, e = proc.communicate()
         volumeLevel = o.decode('ascii').split('\n')
-        self.wfile.write(volumeLevel[1].encode('utf-8'))
+        self.wfile.write(volumeLevel[0].encode('utf-8'))
         # 1 -> depends on your output devices(ex. 0-> Built-In // 1->Connected wireless headphone)
 
     def do_POST(self):# SET VOLUME LEVEL FROM ANDROID APP
