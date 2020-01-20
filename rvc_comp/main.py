@@ -12,14 +12,19 @@ class S(BaseHTTPRequestHandler):
     def do_GET(self): # GET VOLUME LEVEL FROM COMPUTER
         logging.info("GET request,\nPath: %s\nHeaders:\n%s\n", str(self.path), str(self.headers))
         self._set_response()
-        bashCommand = "pactl list sinks | grep '^[[:space:]]Volume:' |  sed -e 's,.* \([0-9][0-9]*\)%.*,\\1,'"
-        proc = subprocess.Popen(['bash', '-c', bashCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        o, e = proc.communicate()
-        volumeLevel = o.decode('ascii').split('\n')
-        self.wfile.write(volumeLevel[0].encode('utf-8'))
-        # 1 -> depends on your output devices(ex. 0-> Built-In // 1->Connected wireless headphone)
+        o1 = executeShell("pactl list sinks | grep '^[[:space:]]Volume:' |  sed -e 's,.* \([0-9][0-9]*\)%.*,\\1,'")
+        volumeLevel = o1.split('\n')
 
-    def do_POST(self):# SET VOLUME LEVEL FROM ANDROID APP
+        o2 = executeShell("pacmd list-sinks | grep '[[:space:]]index:' |  sed -e 's,.* \([0-9][0-9]*\)%.*,\\1,'")
+        sinks = o2.split('\n')
+        sinkIndex = 0
+        for i in sinks:
+            if i.find("*") != -1:
+                sinkIndex = sinks.index(i) # GET LEVEL OF DEFAULT SINK
+        self.wfile.write(volumeLevel[sinkIndex].encode('utf-8'))
+
+
+    def do_POST(self):  # SET VOLUME LEVEL FROM ANDROID APP
         content_length = int(self.headers['Content-Length'])  # <--- Gets the size of data
         post_data = self.rfile.read(content_length)  # <--- Gets the data itself
         logging.info("POST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
@@ -33,16 +38,14 @@ class S(BaseHTTPRequestHandler):
 
 def setVolume(volume):
     #DEFAULT_SINK -> SELECTED DEFAULT DEVICE FROM PULSEAUDIO VOLUME CONTROL
-    increaseVolume = ['pactl', 'set-sink-volume', '@DEFAULT_SINK@', (volume + '%')]
+    increaseVolume = "pactl set-sink-volume @DEFAULT_SINK@ "+volume + "%"
     executeShell(increaseVolume)
 
 
 def executeShell(command):
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(['bash', '-c', command], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     o, e = proc.communicate()
-    print('Output: ' + o.decode('ascii'))
-    print('Error: ' + e.decode('ascii'))
-    print('code: ' + str(proc.returncode))
+    return o.decode('ascii')
 
 
 def run(server_class=HTTPServer, handler_class=S, port=8080):
