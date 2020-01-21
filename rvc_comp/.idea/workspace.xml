@@ -2,9 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3c4edfc2-bc5a-48b9-a3b3-ba4e918603b2" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/rvc.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/rvc.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -59,6 +56,10 @@
       <workItem from="1579378309501" duration="627000" />
       <workItem from="1579537404407" duration="102000" />
       <workItem from="1579537539989" duration="2280000" />
+      <workItem from="1579546405154" duration="1312000" />
+      <workItem from="1579548589902" duration="4000" />
+      <workItem from="1579552823197" duration="69000" />
+      <workItem from="1579593268647" duration="733000" />
     </task>
     <servers />
   </component>

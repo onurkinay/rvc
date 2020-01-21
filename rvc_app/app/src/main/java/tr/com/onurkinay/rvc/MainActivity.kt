@@ -1,20 +1,21 @@
 package tr.com.onurkinay.rvc
 
+import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.session.MediaSession
+import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.view.KeyEvent
-import android.view.Menu
-import android.view.MenuItem
-import android.widget.Button
-import android.widget.SeekBar
-import android.widget.Toast
+import android.text.Editable
+import android.view.*
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -28,25 +29,28 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
 
+import android.widget.ArrayAdapter
+import kotlinx.android.synthetic.main.dialog_ip_setting.view.*
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     var volume: SeekBar? = null
     var left: Button? = null
     var right: Button? = null
-    val ip = "192.168.1.8:8080" // your computer IP and port
+
+    var ip = "192.168.1.8:8080" // your computer IP and port
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val queue = Volley.newRequestQueue(this)
+
         volume = findViewById(R.id.volume)
         left = findViewById(R.id.left)
         right = findViewById(R.id.right)
-
-
-
-        val queue = Volley.newRequestQueue(this)
-        val url = "http://$ip/"
-
 
         volume?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(
@@ -62,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar) {
-                 //stopping touch
+                //stopping touch
             }
         })
 
@@ -83,9 +87,6 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
 
-        createNotificationChannel()
-
-
 
         fab.setOnClickListener { view ->
             Snackbar.make(view, "ben@onurkinay.com.tr \n-> having any problem, write me :)", Snackbar.LENGTH_LONG)
@@ -95,20 +96,21 @@ class MainActivity : AppCompatActivity() {
         val handler = Handler()
         handler.postDelayed(object : Runnable {
             override fun run() {
-                val stringRequest = StringRequest(Request.Method.GET, url,
+                val stringRequest = StringRequest(Request.Method.GET, "http://$ip/",
                     Response.Listener<String> { response ->
                         println(response)
                         volume?.progress = response.toInt()
+
                     },
-                    Response.ErrorListener { /* any error */})
+                    Response.ErrorListener { /* any error */ })
 
                 queue.add(stringRequest)
                 handler.postDelayed(this, 1000) // 1 sec delay
+
             }
         }, 0)
 
     }
-
 
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -118,9 +120,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
+        if (item.itemId == R.id.action_settings) {
+            showIPDialog()
+        }
         return when (item.itemId) {
             R.id.action_settings -> true
             else -> super.onOptionsItemSelected(item)
@@ -160,22 +162,6 @@ class MainActivity : AppCompatActivity() {
         VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 
-    private fun createNotificationChannel() {
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Change Volume Level"
-            val descriptionText = "Made by HonourKNY"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel("0", name, importance).apply {
-                description = descriptionText
-            }
-            // Register the channel with the system
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP -> {
@@ -191,4 +177,36 @@ class MainActivity : AppCompatActivity() {
         }
         return super.onKeyDown(keyCode, event)
     }
+
+    override fun onItemSelected(arg0: AdapterView<*>, arg1: View, position: Int, id: Long) {
+        // use position to know the selected item
+    }
+
+    override fun onNothingSelected(arg0: AdapterView<*>) {
+
+    }
+
+    fun showIPDialog() {
+        val mDialogView = LayoutInflater.from(this).inflate(R.layout.dialog_ip_setting, null)
+
+        //AlertDialogBuilder
+        val mBuilder = AlertDialog.Builder(this)
+            .setView(mDialogView)
+            .setTitle("Enter IP Address")
+        //show dialog
+        mDialogView.dialogIP.setText(ip)
+        val mAlertDialog = mBuilder.show()
+        //login button click of custom layout
+        mDialogView.dialogLoginBtn.setOnClickListener {
+            mAlertDialog.dismiss()
+            ip = mDialogView.dialogIP.text.toString()
+
+        }
+        //cancel button click of custom layout
+        mDialogView.dialogCancelBtn.setOnClickListener {
+            mAlertDialog.dismiss()
+        }
+    }
 }
+
+

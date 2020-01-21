@@ -3,13 +3,15 @@ import logging
 import subprocess
 import json
 
+sinkIndex = 0
 class S(BaseHTTPRequestHandler):
     def _set_response(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
-    def do_GET(self): # GET VOLUME LEVEL FROM COMPUTER
+    def do_GET(self):  # GET VOLUME LEVEL FROM COMPUTER
+        global sinkIndex
         logging.info("GET request,\nPath: %s\nHeaders:\n%s\n", str(self.path), str(self.headers))
         self._set_response()
         o1 = executeShell("pactl list sinks | grep '^[[:space:]]Volume:' |  sed -e 's,.* \([0-9][0-9]*\)%.*,\\1,'")
@@ -17,12 +19,18 @@ class S(BaseHTTPRequestHandler):
 
         o2 = executeShell("pacmd list-sinks | grep '[[:space:]]index:' |  sed -e 's,.* \([0-9][0-9]*\)%.*,\\1,'")
         sinks = o2.split('\n')
+        sinksIndex = []
         sinkIndex = 0
+        j = 0
         for i in sinks:
+            sinksIndex.append(i[-1:])
+            sinksIndex.append(volumeLevel[j])
             if i.find("*") != -1:
-                sinkIndex = sinks.index(i) # GET LEVEL OF DEFAULT SINK
+                sinkIndex = sinks.index(i)  # GET LEVEL OF DEFAULT SINK
+            j += 1
+        sinksIndex.remove(sinksIndex.pop())
+        #self.wfile.write(','.join([str(elem) for elem in sinksIndex]) .encode('utf-8'))
         self.wfile.write(volumeLevel[sinkIndex].encode('utf-8'))
-
 
     def do_POST(self):  # SET VOLUME LEVEL FROM ANDROID APP
         content_length = int(self.headers['Content-Length'])  # <--- Gets the size of data
@@ -37,8 +45,8 @@ class S(BaseHTTPRequestHandler):
 
 
 def setVolume(volume):
-    #DEFAULT_SINK -> SELECTED DEFAULT DEVICE FROM PULSEAUDIO VOLUME CONTROL
-    increaseVolume = "pactl set-sink-volume @DEFAULT_SINK@ "+volume + "%"
+    # DEFAULT_SINK -> SELECTED DEFAULT DEVICE FROM PULSEAUDIO VOLUME CONTROL
+    increaseVolume = "pactl set-sink-volume @DEFAULT_SINK@ " + volume + "%"
     executeShell(increaseVolume)
 
 
