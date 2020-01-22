@@ -27,10 +27,11 @@ class S(BaseHTTPRequestHandler):
             sinksIndex.append(volumeLevel[j])
             if i.find("*") != -1:
                 sinkIndex = sinks.index(i)  # GET LEVEL OF DEFAULT SINK
+                sinksIndex[j*2] += "*"
             j += 1
         sinksIndex.remove(sinksIndex.pop())
-        #self.wfile.write(','.join([str(elem) for elem in sinksIndex]) .encode('utf-8'))
-        self.wfile.write(volumeLevel[sinkIndex].encode('utf-8'))
+        self.wfile.write(','.join([str(elem) for elem in sinksIndex]) .encode('utf-8'))
+        #self.wfile.write(volumeLevel[sinkIndex].encode('utf-8'))
 
     def do_POST(self):  # SET VOLUME LEVEL FROM ANDROID APP
         content_length = int(self.headers['Content-Length'])  # <--- Gets the size of data
@@ -41,7 +42,10 @@ class S(BaseHTTPRequestHandler):
         self._set_response()
         self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
         getInf = json.loads(post_data.decode('utf-8'))
-        setVolume(getInf["volume"])
+        if str(self.path) == "/change":
+            setDefSink(getInf["id"])
+        else:
+            setVolume(getInf["volume"])
 
 
 def setVolume(volume):
@@ -49,6 +53,9 @@ def setVolume(volume):
     increaseVolume = "pactl set-sink-volume @DEFAULT_SINK@ " + volume + "%"
     executeShell(increaseVolume)
 
+def setDefSink(id):
+    changeSink = "pacmd set-default-sink "+id
+    executeShell(changeSink)
 
 def executeShell(command):
     proc = subprocess.Popen(['bash', '-c', command], stdout=subprocess.PIPE, stderr=subprocess.PIPE)

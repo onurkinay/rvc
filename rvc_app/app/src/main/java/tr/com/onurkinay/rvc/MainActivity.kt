@@ -39,7 +39,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     var volume: SeekBar? = null
     var left: Button? = null
     var right: Button? = null
-
+    var audio0: RadioButton? = null
+    var audio1: RadioButton? = null
+    var Audio1ID: String = ""
     var ip = "192.168.1.8:8080" // your computer IP and port
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,6 +53,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         volume = findViewById(R.id.volume)
         left = findViewById(R.id.left)
         right = findViewById(R.id.right)
+        audio0 = findViewById(R.id.audio0)
+        audio1 = findViewById(R.id.audio1)
 
         volume?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(
@@ -99,8 +103,34 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 val stringRequest = StringRequest(Request.Method.GET, "http://$ip/",
                     Response.Listener<String> { response ->
                         println(response)
-                        volume?.progress = response.toInt()
+                        var data = response.split(",")
+                        var IsDefault = false
 
+                        audio1?.isEnabled = data.size != 2
+
+                        for (i in data){
+                            if(IsDefault) {volume?.progress = i.toInt();break;}
+                            if(i.indexOf('*') != -1){
+
+
+                                IsDefault = true;
+                                if(i == "0*"){
+                                    audio0?.isChecked=true
+                                    audio1?.isChecked=false
+                                }else{
+                                    audio1?.isChecked=true
+                                    audio0?.isChecked=false
+                                }
+                            }
+                        }
+
+                        for(i in data.indices) {
+                            if (i % 2 == 0) {
+                                if (data[i].indexOf('*') == -1 && data[i].indexOf('0') == -1) {
+                                    Audio1ID = data[i]
+                                }
+                            }
+                        }
                     },
                     Response.ErrorListener { /* any error */ })
 
@@ -110,6 +140,24 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             }
         }, 0)
 
+    }
+    fun onRadioButtonClicked(view: View) {
+        if (view is RadioButton) {
+            // Is the button now checked?
+            val checked = view.isChecked
+
+            // Check which radio button was clicked
+            when (view.getId()) {
+                R.id.audio0 ->
+                    if (checked) {
+                       changeDefSink(0)
+                    }
+                R.id.audio1 ->
+                    if (checked) {
+                       changeDefSink(Audio1ID.toInt())
+                    }
+            }
+        }
     }
 
 
@@ -136,6 +184,38 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
         val params = HashMap<String, String>()
         params["volume"] = sVol.toString() //get volume level from the seekbar
+        val jsonObject = JSONObject(params as Map<*, *>)
+
+        // Volley post request with parameters
+        val request = JsonObjectRequest(Request.Method.POST, url, jsonObject,
+            Response.Listener { response ->
+                try {
+                } catch (e: Exception) {
+                }
+
+            }, Response.ErrorListener {
+
+            })
+
+
+        // Volley request policy, only one time request to avoid duplicate transaction
+        request.retryPolicy = DefaultRetryPolicy(
+            DefaultRetryPolicy.DEFAULT_TIMEOUT_MS,
+            // 0 means no retry
+            0, // DefaultRetryPolicy.DEFAULT_MAX_RETRIES = 2
+            1f // DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        )
+
+        // Add the volley post request to the request queue
+        VolleySingleton.getInstance(this).addToRequestQueue(request)
+    }
+
+    fun changeDefSink(id:Int){
+        val url = "http://$ip/change"
+
+
+        val params = HashMap<String, String>()
+        params["id"] = id.toString() //get volume level from the seekbar
         val jsonObject = JSONObject(params as Map<*, *>)
 
         // Volley post request with parameters
